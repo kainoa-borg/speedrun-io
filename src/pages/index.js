@@ -4,6 +4,7 @@ import axios from 'axios'
 import {AnimatePresence, motion, stagger} from 'framer-motion'
 import { useEffect, useState } from 'react'
 import React from 'react'
+import {AiOutlineLoading3Quarters} from 'react-icons/ai'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -86,19 +87,33 @@ const list = {
 
 const item = {
   hidden: i => ({
-    opacity: 0, y:-10,
+    opacity: 0, 
+    y:-10,
     transition: {
       duration: 1,
       delay: i * .1
     }
   }), 
   visible: i => ({
-    opacity: 1, y: 0,
+    opacity: 1, 
+    y: 0,
     transition: {
       duration: 1,
       delay: i * .1
     }
   })
+}
+
+const loadingIcon = {
+  visible: {
+    opacity: 1,
+    rotateZ: 360, 
+    transition: {
+      ease: 'linear',
+      duration: 1,
+      repeat: Infinity
+    }
+  }
 }
 
 export default function Home() {
@@ -115,13 +130,21 @@ export default function Home() {
   }, [nameQuery])
 
   useEffect(() => {
+    if (loading) {
+      setGameSearchList([]);
+      setGameData();
+    }
+  }, [loading])
+
+  useEffect(() => {
     if (gameSearchList.length > 0) {
       setGameData();
     }
   }, [gameSearchList])
 
   useEffect(() => {
-    setGameSearchList([]);
+    if (gameData)
+      setGameSearchList([]);
   }, [gameData])
 
   const handleKeyDown = (event) => {
@@ -150,7 +173,7 @@ export default function Home() {
             onClick={() => {setGameSearchList([]); searchGames(nameQuery, setGameSearchList, setLoading)}}  
           >Get Games</button>
 
-          {loading ? <div><motion.p key='motion-p' initial='hidden' animate='visible' exit='hidden' variants={item}>loading...</motion.p></div> : <></>}
+          {loading ? <motion.div key='motion-p' animate='visible' variants={loadingIcon} className='w-4'><AiOutlineLoading3Quarters className='text-white' /></motion.div> : <></>}
 
           <motion.div initial='hidden' animate='visible' exit='hidden' variants={list}>
           {gameSearchList.map((game, i) => {
