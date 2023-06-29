@@ -6,137 +6,12 @@ import { useEffect, useState } from 'react'
 import React from 'react'
 import {AiOutlineLoading3Quarters} from 'react-icons/ai'
 
+import {getNewestRuns, searchGames, updateNewestRuns} from '../functions/api.js'
+import {GameListing} from '../components/GameListing.js'
+
+import {getAbrev, convertTime} from '../functions/helperfuncs.js'
+
 const inter = Inter({ subsets: ['latin'] })
-
-const searchGames = (nameQuery, setGameSearchList, setLoading) => {
-  console.log('searching...');
-  setLoading(true);
-  axios.get('https://www.speedrun.com/api/v1/games?name='+nameQuery).then((response) => {
-    setGameSearchList(response.data.data);
-    setLoading(false);
-  }).catch((error) => {
-    console.log(error);
-    setLoading(false);
-  })
-}
-
-const getGameDetails = (gameID, setGameData, setLoading) => {
-  console.log('searching...')
-  setLoading(true);
-  
-  axios.get('https://www.speedrun.com/api/v1/games/'+gameID+'').then((response_game) => {
-
-    axios.get('https://www.speedrun.com/api/v1/games/'+gameID+'/records?miscellaneous=no&scope=full-game&top=50').then((response_runs) => {
-      
-      response_game.data.data['runs'] = response_runs.data.data[0].runs
-      let cat = response_runs.data.data[0].runs[0].run.category;
-      
-      axios.get('https://www.speedrun.com/api/v1/categories/'+cat).then((response_cat) => {
-        
-        response_game.data.data['runs'].category = response_cat.data.data.name;
-        for (let run in response_game.data.data['runs'].slice(0, 5)) {
-          let thisRun = response_game.data.data['runs'][run];
-          console.log(response_game.data.data['runs'][run]);
-          axios.get(thisRun.run?.players[0].uri).then((response_player) => {
-            if (response_player.data.data.assets.image.uri)
-              response_game.data.data['runs'][run].player_image = response_player.data.data.assets.image.uri;
-            else if (response_player.data.data.assets.icon.uri)
-              response_game.data.data['runs'][run].player_image = response_player.data.data.assets.icon.uri;
-            response_game.data.data['runs'][run].player_name = response_player.data.data.names.international ? response_player.data.data.names.international : response_player.data.data.names.japanese
-            response_game.data.data['runs'][run].player_link = response_player.data.data.weblink;
-            if (run >= 4)
-              setGameData(response_game.data.data);
-              setLoading(false);
-          }).catch((error) => {
-            console.log(error);
-            setLoading(false);
-          })
-        }
-      }).catch((error) => {
-        console.log(error);
-        setLoading(false)
-      })
-    
-    }).catch((error) => {
-      console.log(error);
-      setLoading(false);
-    })
-  
-  }).catch((error) => {
-    console.log(error);
-    setLoading(false);
-  })
-}
-
-const GameListing = (props) => {
-  return (
-    <div className='flex space-x-1 pb-2'>
-      <h2 className='bg-slate-500 p-4 grow'>{props.gameName}</h2>
-      <button className='bg-neutral-600 p-4 md:w-[25%] w-[30%]' onClick={() => {getGameDetails(props.gameID, props.setGameData, props.setLoading)}}>Get Details</button>
-    </div>
-  );
-}
-
-const convertTime = (time) => {
-  console.log(time);
-  let h = String(Math.floor(time / 3600));
-  time = String(time % 3600);
-  console.log(time);
-  let m = String(Math.floor(time / 60));
-  time = String(time % 60);
-  console.log(time);
-  let s = String(Math.floor(time));
-  time = String(time % 1);
-  console.log(time);
-  let ms = String(Math.floor(time * 100));
-
-  console.log([h, m, s, ms]);
-
-  if (ms.length < 2) 
-    ms = '0'+ms;
-  if (s.length < 2) 
-    s = '0'+s;
-  if (m.length < 2) 
-    m = '0'+m;
-  if (h.length < 2) 
-    h = '0'+h;
-
-  // let retString = ''
-  // retString += h > 0 ? h + 'h:' : '';
-  // retString += m > 0 ? m + 'm:' : '';
-  // retString += s > 0 ? s + 's:' : '';
-  // retString += ms > 0 ? ms + 'ms' : '';
-
-  // return retString;
-  return h+'h:'+m+'m:'+s+'s:'+ms+'ms';
-}
-
-const getAbrev = (i) => {
-  let abrev = ''
-  switch (i) {
-    case 1: {
-      abrev = 'st'
-      break;
-    }
-    case 2: {
-      abrev = 'nd'
-      break;
-    }
-    case 3: {
-      abrev = 'rd'
-      break;
-    }
-    case 4: {
-      abrev = 'th'
-      break;
-    }
-    case 5: {
-      abrev = 'th'
-      break;
-    }
-  }
-  return String(i) + abrev;
-}
 
 const list = {
   hidden: {
@@ -188,6 +63,7 @@ export default function Home() {
 
   const [nameQuery, setNameQuery] = useState('');
   const [gameSearchList, setGameSearchList] = useState([]);
+  const [newRunsList, setNewRunsList] = useState([]);
   const [gameData, setGameData] = useState();
   const [loading, setLoading] = useState(false);
 
@@ -215,6 +91,14 @@ export default function Home() {
       setGameSearchList([]);
   }, [gameData])
 
+  useEffect(() => {
+    getNewestRuns(newRunsList, setNewRunsList);
+    const interval = setInterval(() => updateNewestRuns(newRunsList, setNewRunsList), 10000);
+    return () => {
+      clearInterval(interval);
+    }
+  }, [])
+
   const handleKeyDown = (event) => {
     if (event.key == 'Enter') {
       setGameSearchList([]); 
@@ -227,7 +111,7 @@ export default function Home() {
       className={`min-h-screen md:p-24 p-12 ${inter.className}`}
     >
       <AnimatePresence>
-      <div className='flex'>
+      <div className='flex flex-wrap justify-between'>
         <div className='md:w-[50%] w-[100%]'>
           <input 
             className='p-4 text-black'
@@ -237,7 +121,7 @@ export default function Home() {
             placeholder={'Enter game name:'}
           ></input>
           <button 
-            className='p-4 mb-4 bg-slate-500 text-white'
+            className='p-4 mb-4 bg-slate-700 text-white'
             onClick={() => {setGameSearchList([]); searchGames(nameQuery, setGameSearchList, setLoading)}}  
           >Get Games</button>
 
@@ -256,27 +140,29 @@ export default function Home() {
           {
             gameData ?
             <motion.div key='detail-container' className='' initial='hidden' animate='visible' exit='hidden' variants={list}>
-              <motion.h2 key='detail-h2' variants={item} className='text-3xl pb-4'>{gameData.names.international}</motion.h2>
+              {/* Game Header and Image */}
+              <motion.h2 key='detail-h2' variants={item} className='md:text-4xl text-2xl md:pt-4 md:pb-4 pb-2'>{gameData.names.international}</motion.h2>
               <motion.div key='detail-div' variants={item}>
                 <img className='md:max-h-[100%] max-h-[200px]' src={gameData.assets['cover-small'].uri}/>
               </motion.div>
-              <motion.h3 key='detail-runs-header' variants={item} className='text-2xl pt-6'>Best Times:</motion.h3>
-              <motion.h3 key='detail-runs-subheader' variants={item} className='text-2xl pb-2'>&apos;{gameData.runs.category}&apos;</motion.h3>
+              {/* Best Times Header */}
+              <motion.h3 key='detail-runs-header' variants={item} className='md:text-3xl text-xl pt-6'>Best Times:</motion.h3>
+              <motion.h3 key='detail-runs-subheader' variants={item} className='md:text-3xl text-xl pb-2'>&apos;{gameData.runs.category}&apos;</motion.h3>
+              {/* List of Best Times */}
               <motion.ul key='detail-runs' variants={list} className=''>
-                {gameData.runs.slice(0, 5).map((run, i) => {
+                {gameData.runs.slice(0, 5).map((run, i) => {                  
                   console.log(run);
-                  
                   return(
-                  <motion.li key={run.run.id} variants={item} className='text-white text-l font-mono flex flex-wrap p-2'>
+                  <motion.li key={run.run.id} variants={item} className='text-white md:w-auto w-[100%] bg-slate-900 my-1 md:text-lg text-sm font-mono flex flex-wrap p-2'>
                     {
                       i < 3 
                       ? 
-                      <img className='ml-[-.25rem] h-4 w-4 mr-[.5rem]' src={'https://www.speedrun.com/images/' + getAbrev(i+1) + '.png'}></img>
+                      <img className='h-6 w-6 md:mr-[1.25rem] mr-[1rem]' src={'https://www.speedrun.com/images/' + getAbrev(i+1) + '.png'}></img>
                       :
-                      <p className='ml-[-1.25rem] mr-1'>{getAbrev(i+1)}: </p>
+                      <p className='md:mr-1 mr-2'>{getAbrev(i+1)}: </p>
                     }
-                    <p className='mr-4'>{convertTime(run.run.times.primary_t)}</p>
-                    <div className='flex md:pl-0 pl-6'>
+                    <a className='mr-4 underline' href={run.run.weblink}>{convertTime(run.run.times.primary_t)}</a>
+                    <div className='flex md:pl-0 pl-10'>
                       <p className='pr-2'>by:</p>
                       <motion.img key={run.player_image} src={run.player_image} variants={item} className='h-6 w-6'></motion.img>
                       <a className='ml-2 underline' href={run.player_link}>{run.player_name}</a>
@@ -290,9 +176,38 @@ export default function Home() {
             <></>
           }
         </div>
-        <div className='md:w-[50%] w-[100%]'>
-
-        </div>
+          <div className='md:w-[45%] w-[100vw] p-4 md:mt-auto mt-2 bg-slate-700'>
+            {/* Ticker */}
+            <h4>Latest Times:</h4>
+            <div>
+              {
+                newRunsList.map((run, i) => {
+                  return(
+                    <motion.li key={run.id} variants={item} className='text-white bg-slate-900 my-1 md:text-lg text-xs font-mono flex flex-wrap p-2 w-[100%]'>
+                      <div className='flex w-[100%]'>
+                        <p>{run.game_name}</p>
+                      </div>
+                      <div className='w-[100%]'>
+                        <div className='flex mb-4'>
+                          <a className='underline mr-4' href={run.weblink}>{convertTime(run.times.primary_t)}</a>
+                          <p>&apos;{run.category_name}&apos;</p>
+                        </div>
+                        <div className='flex justify-between'>
+                          <div className='flex'>
+                            <p className='mr-1'>by:</p>
+                            <motion.img key={run.player_image} src={run.player_image} variants={item} className='md:h-6 md:w-6 h-3 w-3 mr-1'></motion.img>
+                            <a className='underline' href={run.player_link}>{run.player_name ? run.player_name : 'Unknown User'}</a>
+                          </div>
+                          <p>{run.seconds_since}</p>
+                        </div>
+                      </div>                      
+                    </motion.li>
+                    )
+                })
+              }
+            </div>
+          </div>
+        
       </div>
     </AnimatePresence>      
     </main>
