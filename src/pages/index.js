@@ -170,7 +170,7 @@ export default function Home() {
                 <img src={gameData.assets['cover-small'].uri}/>
               </motion.div>
               <motion.h3 key='detail-runs-header' variants={item} className='text-2xl pt-6'>Best Times:</motion.h3>
-              <motion.h3 key='detail-runs-header' variants={item} className='text-2xl pb-2'>'{gameData.runs.category}'</motion.h3>
+              <motion.h3 key='detail-runs-header' variants={item} className='text-2xl pb-2'>"{gameData.runs.category}"</motion.h3>
               <motion.ul key='detail-runs' variants={list} className=''>
                 {gameData.runs.slice(0, 5).map((run, i) => {
                   return(
