@@ -34,25 +34,24 @@ const getGameDetails = (gameID, setGameData, setLoading) => {
       axios.get('https://www.speedrun.com/api/v1/categories/'+cat).then((response_cat) => {
         
         response_game.data.data['runs'].category = response_cat.data.data.name;
-        for (let run in response_game.data.data['runs']) {
+        for (let run in response_game.data.data['runs'].slice(0, 5)) {
           let thisRun = response_game.data.data['runs'][run];
-          console.log(thisRun);
+          console.log(response_game.data.data['runs'][run]);
           axios.get(thisRun.run?.players[0].uri).then((response_player) => {
             if (response_player.data.data.assets.image.uri)
-              thisRun.player_image = response_player.data.data.assets.image.uri;
+              response_game.data.data['runs'][run].player_image = response_player.data.data.assets.image.uri;
             else if (response_player.data.data.assets.icon.uri)
-              thisRun.player_image = response_player.data.data.assets.icon.uri;
-            thisRun.player_name = response_player.data.data.names.international ? response_player.data.data.names.international : response_player.data.data.names.japanese
-            thisRun.player_link = response_player.data.data.weblink;
+              response_game.data.data['runs'][run].player_image = response_player.data.data.assets.icon.uri;
+            response_game.data.data['runs'][run].player_name = response_player.data.data.names.international ? response_player.data.data.names.international : response_player.data.data.names.japanese
+            response_game.data.data['runs'][run].player_link = response_player.data.data.weblink;
+            if (run >= 4)
+              setGameData(response_game.data.data);
+              setLoading(false);
           }).catch((error) => {
             console.log(error);
             setLoading(false);
           })
         }
-
-        setGameData(response_game.data.data);
-        setLoading(false);
-
       }).catch((error) => {
         console.log(error);
         setLoading(false)
@@ -110,6 +109,33 @@ const convertTime = (time) => {
 
   // return retString;
   return h+'h:'+m+'m:'+s+'s:'+ms+'ms';
+}
+
+const getAbrev = (i) => {
+  let abrev = ''
+  switch (i) {
+    case 1: {
+      abrev = 'st'
+      break;
+    }
+    case 2: {
+      abrev = 'nd'
+      break;
+    }
+    case 3: {
+      abrev = 'rd'
+      break;
+    }
+    case 4: {
+      abrev = 'th'
+      break;
+    }
+    case 5: {
+      abrev = 'th'
+      break;
+    }
+  }
+  return String(i) + abrev;
 }
 
 const list = {
@@ -221,7 +247,7 @@ export default function Home() {
           {gameSearchList.map((game, i) => {
             return (
               <motion.div layout key={game.id} custom={i} variants={item}>
-                <GameListing gameName={game.names.international} gameID={game.id} setLoading={setLoading} setGameData={setGameData}/>
+                <GameListing gameName={game.names.international} gameLogo={game.assets.logo?.uri} gameID={game.id} setLoading={setLoading} setGameData={setGameData}/>
               </motion.div>
             )
           })}
@@ -232,21 +258,28 @@ export default function Home() {
             <motion.div key='detail-container' className='' initial='hidden' animate='visible' exit='hidden' variants={list}>
               <motion.h2 key='detail-h2' variants={item} className='text-3xl pb-4'>{gameData.names.international}</motion.h2>
               <motion.div key='detail-div' variants={item}>
-                <img src={gameData.assets['cover-small'].uri}/>
+                <img className='md:max-h-[100%] max-h-[200px]' src={gameData.assets['cover-small'].uri}/>
               </motion.div>
               <motion.h3 key='detail-runs-header' variants={item} className='text-2xl pt-6'>Best Times:</motion.h3>
               <motion.h3 key='detail-runs-subheader' variants={item} className='text-2xl pb-2'>&apos;{gameData.runs.category}&apos;</motion.h3>
               <motion.ul key='detail-runs' variants={list} className=''>
                 {gameData.runs.slice(0, 5).map((run, i) => {
                   console.log(run);
-                  // 
+                  
                   return(
                   <motion.li key={run.run.id} variants={item} className='text-white text-l font-mono flex flex-wrap p-2'>
-                    <p className='mr-4'>{i+1}: {convertTime(run.run.times.primary_t)}</p>
+                    {
+                      i < 3 
+                      ? 
+                      <img className='ml-[-.25rem] h-4 w-4 mr-[.5rem]' src={'https://www.speedrun.com/images/' + getAbrev(i+1) + '.png'}></img>
+                      :
+                      <p className='ml-[-1.25rem] mr-1'>{getAbrev(i+1)}: </p>
+                    }
+                    <p className='mr-4'>{convertTime(run.run.times.primary_t)}</p>
                     <div className='flex md:pl-0 pl-6'>
-                      <p>by:</p>
+                      <p className='pr-2'>by:</p>
                       <motion.img key={run.player_image} src={run.player_image} variants={item} className='h-6 w-6'></motion.img>
-                      <a className='ml-2'>{run.player_name}</a>
+                      <a className='ml-2 underline' href={run.player_link}>{run.player_name}</a>
                     </div>
                   </motion.li>
                   )
