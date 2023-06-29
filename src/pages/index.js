@@ -23,22 +23,46 @@ const searchGames = (nameQuery, setGameSearchList, setLoading) => {
 const getGameDetails = (gameID, setGameData, setLoading) => {
   console.log('searching...')
   setLoading(true);
+  
   axios.get('https://www.speedrun.com/api/v1/games/'+gameID+'').then((response_game) => {
+
     axios.get('https://www.speedrun.com/api/v1/games/'+gameID+'/records?miscellaneous=no&scope=full-game&top=50').then((response_runs) => {
+      
       response_game.data.data['runs'] = response_runs.data.data[0].runs
       let cat = response_runs.data.data[0].runs[0].run.category;
+      
       axios.get('https://www.speedrun.com/api/v1/categories/'+cat).then((response_cat) => {
+        
         response_game.data.data['runs'].category = response_cat.data.data.name;
+        for (let run in response_game.data.data['runs']) {
+          let thisRun = response_game.data.data['runs'][run];
+          console.log(thisRun);
+          axios.get(thisRun.run?.players[0].uri).then((response_player) => {
+            if (response_player.data.data.assets.image.uri)
+              thisRun.player_image = response_player.data.data.assets.image.uri;
+            else if (response_player.data.data.assets.icon.uri)
+              thisRun.player_image = response_player.data.data.assets.icon.uri;
+            thisRun.player_name = response_player.data.data.names.international ? response_player.data.data.names.international : response_player.data.data.names.japanese
+            thisRun.player_link = response_player.data.data.weblink;
+          }).catch((error) => {
+            console.log(error);
+            setLoading(false);
+          })
+        }
+
         setGameData(response_game.data.data);
         setLoading(false);
+
       }).catch((error) => {
         console.log(error);
         setLoading(false)
       })
+    
     }).catch((error) => {
       console.log(error);
       setLoading(false);
     })
+  
   }).catch((error) => {
     console.log(error);
     setLoading(false);
@@ -55,10 +79,20 @@ const GameListing = (props) => {
 }
 
 const convertTime = (time) => {
-  let ms = String(Math.floor(time % 1 * 10));
-  let s = String(Math.floor(time % 60));
+  console.log(time);
+  let h = String(Math.floor(time / 3600));
+  time = String(time % 3600);
+  console.log(time);
   let m = String(Math.floor(time / 60));
-  let h = String(Math.floor(time / 60 / 60));
+  time = String(time % 60);
+  console.log(time);
+  let s = String(Math.floor(time));
+  time = String(time % 1);
+  console.log(time);
+  let ms = String(Math.floor(time * 100));
+
+  console.log([h, m, s, ms]);
+
   if (ms.length < 2) 
     ms = '0'+ms;
   if (s.length < 2) 
@@ -67,7 +101,15 @@ const convertTime = (time) => {
     m = '0'+m;
   if (h.length < 2) 
     h = '0'+h;
-  return h + 'h:' + m + 'm:' + s + 's:' + ms + 'ms';
+
+  // let retString = ''
+  // retString += h > 0 ? h + 'h:' : '';
+  // retString += m > 0 ? m + 'm:' : '';
+  // retString += s > 0 ? s + 's:' : '';
+  // retString += ms > 0 ? ms + 'ms' : '';
+
+  // return retString;
+  return h+'h:'+m+'m:'+s+'s:'+ms+'ms';
 }
 
 const list = {
@@ -193,11 +235,20 @@ export default function Home() {
                 <img src={gameData.assets['cover-small'].uri}/>
               </motion.div>
               <motion.h3 key='detail-runs-header' variants={item} className='text-2xl pt-6'>Best Times:</motion.h3>
-              <motion.h3 key='detail-runs-header' variants={item} className='text-2xl pb-2'>&apos;{gameData.runs.category}&apos;</motion.h3>
+              <motion.h3 key='detail-runs-subheader' variants={item} className='text-2xl pb-2'>&apos;{gameData.runs.category}&apos;</motion.h3>
               <motion.ul key='detail-runs' variants={list} className=''>
                 {gameData.runs.slice(0, 5).map((run, i) => {
+                  console.log(run);
+                  // 
                   return(
-                  <motion.li key={run.run.id} variants={item} className='text-white'>{i+1}: {convertTime(run.run.times.primary_t)}</motion.li>
+                  <motion.li key={run.run.id} variants={item} className='text-white text-l font-mono flex flex-wrap p-2'>
+                    <p className='mr-4'>{i+1}: {convertTime(run.run.times.primary_t)}</p>
+                    <div className='flex md:pl-0 pl-6'>
+                      <p>by:</p>
+                      <motion.img key={run.player_image} src={run.player_image} variants={item} className='h-6 w-6'></motion.img>
+                      <a className='ml-2'>{run.player_name}</a>
+                    </div>
+                  </motion.li>
                   )
                 })}
               </motion.ul>
