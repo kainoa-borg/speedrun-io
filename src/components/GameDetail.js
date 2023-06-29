@@ -14,7 +14,7 @@ export const GameDetail = (props) => {
                 <img className='md:max-h-[100%] max-h-[200px]' src={gameData.assets['cover-small'].uri}/>
             </motion.div>
             {/* Best Times Header */}
-            <motion.h3 key='detail-runs-header' variants={item} className='md:text-3xl text-xl pt-6'>Best Times:</motion.h3>
+            <motion.h3 key='detail-runs-header' variants={item} className='md:text-2xl text-lg pt-6'>Best Times:</motion.h3>
                 <motion.div key='detail-runs-container' variants={list} className='flex wrap'>
                     {
                         gameData.categories.map((cat, key) => {
@@ -27,7 +27,7 @@ export const GameDetail = (props) => {
                                     className={catIndex == key ? 'bg-slate-500' : 'bg-slate-700'}
                                     onClick={() => {setCatIndex(key)}}  
                                 >
-                                    <h3 className='xl:p-3 p-2 xl:text-lg text-sm'>&apos;{cat.name}&apos;</h3>
+                                    <h3 className='xl:px-3 p-2 xl:text-[.9rem] text-sm'>&apos;{cat.name}&apos;</h3>
                                 </motion.button>
                             )
                         })
