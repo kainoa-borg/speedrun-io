@@ -113,7 +113,7 @@ export default function Home() {
               {
                 newRunsList.map((run, i) => {
                   return (
-                    <RunListing run={run} i={i}/>
+                    <RunListing key={'latest-time-'+i} run={run} i={i}/>
                   )
                 })
               }
