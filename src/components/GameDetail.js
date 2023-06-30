@@ -15,7 +15,7 @@ export const GameDetail = (props) => {
             </motion.div>
             {/* Best Times Header */}
             <motion.h3 key='detail-runs-header' variants={item} className='md:text-2xl text-lg pt-6'>Best Times:</motion.h3>
-                <motion.div key='detail-runs-container' variants={list} className='flex wrap'>
+                <motion.div key='detail-runs-container' variants={list} className='flex flex-wrap max-w-[100%] min-w-0'>
                     {
                         gameData.categories.map((cat, key) => {
                             console.log(cat);
@@ -27,7 +27,7 @@ export const GameDetail = (props) => {
                                     className={catIndex == key ? 'bg-slate-500' : 'bg-slate-700'}
                                     onClick={() => {setCatIndex(key)}}  
                                 >
-                                    <h3 className='xl:px-3 p-2 xl:text-[.9rem] text-sm'>&apos;{cat.name}&apos;</h3>
+                                    <p className='xl:px-3 p-2 xl:text-[.9rem] md:text-md text-xs'>&apos;{cat.name}&apos;</p>
                                 </motion.button>
                             )
                         })
