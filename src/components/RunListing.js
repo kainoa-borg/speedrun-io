@@ -18,15 +18,13 @@ export const RunListing = (props) => {
             <div className='flex justify-between'>
               <div className='flex'>
                 <p className='mr-1'>by:</p>
-                
-                {
+                 {
                     run.player_image
                     ?
                     <motion.img key={run.player_image} src={run.player_image} variants={item} className='md:h-6 md:w-6 h-3 w-3 mr-1'></motion.img>
                     :
                     <></>
                 }
-                
                 <a className='underline' href={run.player_link}>{run.player_name ? run.player_name : 'Unknown User'}</a>
               </div>
               <p>{run.seconds_since}</p>
